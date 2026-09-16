@@ -1,0 +1,8 @@
+# Only sync Claude Code conversation history (projects/*.jsonl).
+# Everything else in ~/.claude (credentials, settings, cache, usage db, etc.) stays local.
+/*
+!/.gitignore
+!/projects/
+!/projects/**
+!/sync/
+!/sync/**

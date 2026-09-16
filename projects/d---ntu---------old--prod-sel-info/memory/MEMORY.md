@@ -1,0 +1,2 @@
+- [No Co-Authored-By trailer](feedback_commit_no_coauthor.md) — don't add Claude co-author line to commits in this repo
+- [sel-info JS obfuscation build](project_sel_info_js_obfuscation.md) — main.js build/gitignore/history-rewrite setup, solo-maintained repo

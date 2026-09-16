@@ -1,0 +1,2 @@
+- [No Co-Authored-By in commits/PRs](feedback_no_co_authored_by.md) — user wants this stripped globally, enforced via ~/.claude/CLAUDE.md
+- [Local dev only, demo location TBD](project_local_dev_only.md) — repo went private, Pages broke; don't push/deploy until told where the new demo lives
