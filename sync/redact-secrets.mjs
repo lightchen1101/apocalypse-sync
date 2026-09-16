@@ -15,7 +15,7 @@ const PATTERNS = [
   { name: "openai-api-key", re: /sk-(?:proj-)?[A-Za-z0-9_-]{20,}/g, redact: fullRedact("openai-api-key") },
   { name: "gcp-api-key", re: /AIza[0-9A-Za-z_-]{35}/g, redact: fullRedact("gcp-api-key") },
   { name: "gemini-api-key", re: /AQ\.[A-Za-z0-9_-]{20,}/g, redact: fullRedact("gemini-api-key") },
-  { name: "connection-string-password", re: /(PWD|PASSWORD)=([^;"'\s\\]{6,})/gi, redact: (_m, p1) => `${p1}=[REDACTED:connection-string-password]` },
+  { name: "connection-string-password", re: /(PWD|PASSWORD)=([^;"'\s\\[\]]{6,})/gi, redact: (_m, p1) => `${p1}=[REDACTED:connection-string-password]` },
   { name: "private-key-block", re: /-----BEGIN (?:RSA |EC |)PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |)PRIVATE KEY-----/g, redact: fullRedact("private-key") },
   { name: "aws-access-key-id", re: /AKIA[0-9A-Z]{16}/g, redact: fullRedact("aws-access-key-id") },
   { name: "github-token", re: /gh[pousr]_[A-Za-z0-9]{36,}/g, redact: fullRedact("github-token") },
@@ -25,7 +25,7 @@ const PATTERNS = [
   { name: "bearer-token", re: /(Bearer\s+)[A-Za-z0-9\-_.~+/]{20,}=*/g, redact: (_m, p1) => `${p1}[REDACTED:bearer-token]` },
   {
     name: "assigned-secret",
-    re: /("(?:api[_-]?key|apikey|access[_-]?token|secret[_-]?key|client[_-]?secret|password)"\s*:\s*")([^"\\]{8,})(")/gi,
+    re: /("(?:api[_-]?key|apikey|access[_-]?token|secret[_-]?key|client[_-]?secret|password)"\s*:\s*")([^"\\[]{8,})(")/gi,
     redact: (_m, p1, _p2, p3) => `${p1}[REDACTED:assigned-secret]${p3}`,
   },
 ];
@@ -48,28 +48,31 @@ let totalRedactions = 0;
 const report = [];
 
 for (const file of walk(root)) {
-  let content;
+  let original;
   try {
-    content = readFileSync(file, "utf8");
+    original = readFileSync(file, "utf8");
   } catch {
     continue;
   }
-  let changed = false;
-  let fileRedactions = 0;
+  let content = original;
+  const fileReport = [];
   for (const { name, re, redact } of PATTERNS) {
     re.lastIndex = 0;
     const matches = content.match(re);
     if (matches && matches.length) {
       content = content.replace(re, redact);
-      changed = true;
-      fileRedactions += matches.length;
-      report.push({ file, name, count: matches.length });
+      fileReport.push({ file, name, count: matches.length });
     }
   }
-  if (changed) {
+  // Only write/report if the redaction actually altered the file — patterns can
+  // otherwise re-"match" their own already-redacted placeholder text on rescans.
+  if (content !== original) {
     writeFileSync(file, content, "utf8");
     filesChanged++;
-    totalRedactions += fileRedactions;
+    for (const entry of fileReport) {
+      totalRedactions += entry.count;
+      report.push(entry);
+    }
   }
 }
 
